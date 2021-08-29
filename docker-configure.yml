@@ -1,0 +1,60 @@
+# run with:
+# ansible-playbook docker-configure.yml --user=<your_user_name> --ask-become-pass
+- hosts: localhost
+  connection: local
+  become: true
+  tasks:
+  # weirdly, this returns "Debian" on Xubuntu 20.04.3
+  # That is why the 'when' options below contain Debian as well.
+  - debug:
+      var: ansible_os_family
+
+  - name: "Install docker on focal via apt"
+    apt:
+      pkg:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      state: present
+      update_cache: yes
+    become: true
+    when: ansible_facts['os_family'] == 'Debian'
+
+  - name: "Add docker key"
+    apt_key:
+      url: "https://download.docker.com/linux/ubuntu/gpg"
+      state: present
+    become: true
+    when: ansible_facts['os_family'] == 'Debian'
+
+  - name: "Set up repository"
+    ansible.builtin.apt_repository:
+      repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution|lower }} {{ ansible_distribution_release|lower }} stable"
+      state: present
+      update_cache: yes
+    become: true
+    when: ansible_facts['os_family'] == 'Debian'
+
+  - name: "Install docker-ce"
+    apt:
+      pkg: docker-ce
+      state: present
+      update_cache: yes
+    become: true
+    when: ansible_facts['os_family'] == 'Debian'
+
+  - name: "Install pip3"
+    package:
+      name: "python3-pip"
+      state: present
+      update_cache: true
+
+  - name: "Install docker sdk"
+    pip:
+     name: "docker"
+
+  - name: "Start docker service"
+    service:
+      name: "docker"
+      state: started
