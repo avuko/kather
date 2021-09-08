@@ -1,3 +1,4 @@
+# This script is meant to set up everything on Ubuntu 20.04 (focal)
 # run with:
 # ansible-playbook docker-configure.yml --user=<your_user_name> --ask-become-pass
 - hosts: localhost
@@ -35,6 +36,29 @@
       update_cache: yes
     become: true
     when: ansible_facts['os_family'] == 'Debian'
+
+  - name: "Enable universe repository"
+    apt_repository:
+      repo: "{{ item }}"
+    loop:
+      - "deb http://archive.ubuntu.com/ubuntu/ focal universe"
+      - "deb http://archive.ubuntu.com/ubuntu/ focal-updates universe"
+      - "deb http://security.ubuntu.com/ubuntu/ focal-security universe"
+
+  - name: "Make sure we have python2"
+    apt:
+      pkg:
+        - python2
+      state: present
+      update_cache: yes
+
+  - name: "Get python2 pip manually"
+    get_url:
+      url: "https://bootstrap.pypa.io/pip/2.7/get-pip.py"
+      dest: "get-pip.py"
+
+  - name: "install python2-pip manually"
+    command: "python2 get-pip.py"
 
   - name: "Install docker-ce"
     apt:
